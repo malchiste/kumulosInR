@@ -1,36 +1,49 @@
+# This is a very simple library to make API calls to Kumulos REST API.
 library(httr)
 library(jsonlite)
 
+# The Rest API Key is the API key to make generic CRUD calls to Kumulos tables.
 restApiKey <- "RESTAPIKEY"
+
+# SEC is the API Secret
 sec <- "SECXXXX"
+
+# mbaasAppId is the prefix of the tables and API names, it consists of two four digit numbers separated by an underscore.
 mbaasAppId <- "1234_5678"
+
+# The API Key is the key to make calls to the deployed API functions created at the MBAAS repository.
 apiKey <- "APIKEY"
 
-
+# readData retrieves the data from a particular table, using the REST API.
+# note that it shows only the first 1000 rows.
 readData <- function (dataTable){
   url <- paste0("https://api.kumulos.com/v1/data/", mbaasAppId,"_",dataTable, "?numberPerPage=1000") 
   dataToRead <- fromJSON(content(GET(url, authenticate(restApiKey, "password", type = "basic"), encode = "json"), as = "text"))
   dataToRead
 }
 
-
+# insertData allows to insert new data to the Kumulos hosted tables using the REST API.
 insertData <- function(dataTable, listA) {
   url <- paste0("https://api.kumulos.com/v1/data/", mbaasAppId,"_", dataTable)
   insertData1 <- POST(url, authenticate(restApiKey, "password", type = "basic"), body = listA, encode = "json",  verbose())
   insertData1
 }
+
+# Deletes a single row in the table, based on its primary key, or ID.
 deleteData <- function(dataTable, id) {
   url <- paste0("https://api.kumulos.com/v1/data/", mbaasAppId,"_",dataTable, "/", id) 
   deleteData <- content(DELETE(url, authenticate(restApiKey, "password", type = "basic"), encode = "form"), as = "text")
   deleteData
 }
 
+# Updates the values of a set of columns of one row based on its primary key.
 updateData <- function(dataTable, id, listA) {
   url <- paste0("https://api.kumulos.com/v1/data/", mbaasAppId,"_", dataTable, "/", id)
   updateData <- PUT(url, authenticate(restApiKey, "password", type = "basic"), body = listA, encode = "json",  verbose())
   updateData
 }
 
+# Allows calling an API Method.
 runApiMethod <- function (methodName, parameters){
   url <- paste0("https://api.kumulos.com/b2.2/", apiKey, "/", methodName,".json")
   results <- POST(
@@ -41,22 +54,15 @@ runApiMethod <- function (methodName, parameters){
   return (results)
 }
 
-
-
-#  apiMethodUsageExample 
-
-  
+#### Usage Examples
+#  runApiMethod usage example 
   kPars <- list(
     parameter1 = par1, 
     parameter2 = par2, 
     parameter3 = par3)
   runApiMethod("apiMethod", kPars)
 
- 
-#  insertUsageExample
-#  Very useful for bulk loads:
-
-    
+#  This example shows how to bulk load data to a table.
 zipCodeAdd <- function(zipCode, place) {
   kPars <- list(
     "zipCode" = zipCode,
@@ -71,20 +77,7 @@ lapply(zipCodesDenver, function(x) { zipCodeAdd(x, "Denver")})
 
 
 #  Bulk read and deleteData
-#  The following delets all rows in the table "events"
-
+#  The following delets all rows in the table "events", one by one.
 events <- readData("events")
 lapply(events$eventID, function(x) { deleteData( "events", x)} )
-    
-#  add random values to a column
-randomStrings <- function(n = 5000) {
-  a <- do.call(paste0, replicate(3, sample(LETTERS, n, TRUE), FALSE))
-  a
-}
 
-updateInviteCodes <- function() {
-  inviteCodes <- tolower(randomStrings(nrow(dataFromUsers)))
-  for (i in 1:length(userIds)){
-    updateData("users", userIds[i], list(inviteCode = inviteCodes[i])) 
-  }
-}
